@@ -16,7 +16,7 @@
     </h1>
 
     <h3 class="tooltip">
-        Upload CSV
+        Upload Expedia Reservations CSV
         <span class="tooltiptext">
             1. Download reservations list from Expedia in csv form (filter:Hotel Collect(optional)).<br>
             2. Upload the CSV file here and when its processed run the bot.<br>
@@ -27,9 +27,9 @@
     </h3>
 
     <input type="file" id="csvFile" accept=".csv" />
-    <button id="runBot">Run Bot</button>
+    <button id="runBot">Run (Check Reservations on Choice) </button>
 
-    <h4>Filter Reservations:</h4>
+    <h4>Filter Reservations by status:</h4>
     <div id="filters">
         <label class="filterBox"><input type="checkbox" class="statusFilter" value="No Show" checked> No Show</label>
         <label class="filterBox"><input type="checkbox" class="statusFilter" value="Cancelled" checked>
@@ -39,7 +39,9 @@
             Out</label>
     </div>
     <h4>Choice Advantage Reservation status:</h4>
-    <textarea id="noShowList" readonly></textarea>
+    <!-- <textarea id="noShowList" readonly></textarea> -->
+    <div id="noShowList"></div>
+
 
     <div style="text-align:center; font-size:10px; color:#888; margin-top:10px;">
         by Parth

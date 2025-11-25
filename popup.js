@@ -67,29 +67,76 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // --- 2) Populate No-show / Cancelled list ---
+    // function updateNoShowList() {
+    //     chrome.runtime.sendMessage({ type: "GET_RESULTS" }, (response) => {
+    //         if (!response || !response.confirmations) return;
+
+    //         // Get all checked filters
+    //         const checkedFilters = Array.from(document.querySelectorAll(".statusFilter:checked"))
+    //             .map(cb => cb.value);
+    //         const showAll = checkedFilters.includes("All");
+
+    //         const lines = [];
+
+    //         for (const [conf, data] of Object.entries(response.confirmations)) {
+    //             const status = data.choiceStatus || "";
+
+    //             // Check for date mismatch
+    //             const stayChanged = (data.checkin !== data.choice_arrival) || (data.checkout !== data.choice_departure);
+
+    //             if (stayChanged) {
+    //                 // Always show if stay changed
+    //                 lines.push(`${conf} - ${data.name} - ${status} - STAY CHANGES`);
+    //             } else if (showAll || checkedFilters.includes(status)) {
+    //                 // Normal behavior
+    //                 lines.push(`${conf} - ${data.name} - ${status}`);
+    //             }
+    //         }
+
+    //         noShowList.value = lines.join("\n");
+    //     });
+    // }
+
     function updateNoShowList() {
         chrome.runtime.sendMessage({ type: "GET_RESULTS" }, (response) => {
             if (!response || !response.confirmations) return;
 
-            // Get all checked filters
             const checkedFilters = Array.from(document.querySelectorAll(".statusFilter:checked"))
                 .map(cb => cb.value);
             const showAll = checkedFilters.includes("All");
 
-            const lines = [];
+            const container = document.getElementById("noShowList");
+            container.innerHTML = ""; // Clear previous
 
             for (const [conf, data] of Object.entries(response.confirmations)) {
                 const status = data.choiceStatus || "";
+                const stayChanged = (data.checkin !== data.choice_arrival) || (data.checkout !== data.choice_departure);
 
-                // Include line if "All" is checked or status matches a checked filter
-                if (showAll || checkedFilters.includes(status)) {
-                    lines.push(`${conf} - ${data.name} - ${status}`);
+                const line = document.createElement("div");
+                line.textContent = `${conf} - ${data.name} - ${status}`;
+
+                // if (stayChanged) {
+                //     line.style.backgroundColor = "#ffcccc"; // light red
+                //     line.style.fontWeight = "bold";
+                //     line.textContent += " - STAY CHANGES";
+                //     line.title = `Original: ${data.checkin} → ${data.checkout}\nChoice: ${data.choice_arrival} → ${data.choice_departure}`;
+                // }
+
+                if (stayChanged) {
+                    line.classList.add("stayChangeLine");
+                    line.dataset.tooltip = `Original: ${data.checkin} → ${data.checkout} \nChoice: ${data.choice_arrival} → ${data.choice_departure}`;
+                    line.textContent += " - STAY CHANGES";
+                }
+
+
+                // Only add normal lines if matching filters
+                if (stayChanged || showAll || checkedFilters.includes(status)) {
+                    container.appendChild(line);
                 }
             }
-
-            noShowList.value = lines.join("\n");
         });
     }
+
 
 
     // Update list every 2 seconds so popup reflects live progress

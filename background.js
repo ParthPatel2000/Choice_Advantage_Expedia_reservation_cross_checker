@@ -30,6 +30,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (confirmations[conf]) {
             // Add the status field to the original object
             confirmations[conf].choiceStatus = msg.status || "UNKNOWN";
+
+            // Add arrival/departure
+            confirmations[conf].choice_arrival = msg.choice_arrival || null;
+            confirmations[conf].choice_departure = msg.choice_departure || null;
+
         } else {
             console.warn("Confirmation not found in object:", conf);
         }
@@ -43,6 +48,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (currentIndex >= confirmationQueue.length) {
             console.log("All confirmations processed.");
             console.log("Final confirmations with status:", confirmations);
+
+            chrome.storage.local.set({ CHOICE_RESULTS: confirmations }, () => {
+                console.log("Saved confirmations to chrome.storage.local");
+            });
+
+            //clear in-memory cache to prevent re runs
+            confirmations = {};
+            confirmationQueue = [];
+            currentIndex = 0;
+
             return;
         }
 
@@ -53,11 +68,21 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
 
     if (msg.type === "GET_RESULTS") {
-    // Return current confirmation objects
-    sendResponse({ confirmations });
-    // Return true to indicate async response not needed here
-    return true;
-}
+        let results = Object.keys(confirmations).length ? confirmations : {};
+
+        if (!Object.keys(results).length) {
+            chrome.storage.local.get("CHOICE_RESULTS", (data) => {
+                if (data.CHOICE_RESULTS) results = data.CHOICE_RESULTS;
+                sendResponse({ confirmations: results });
+                console.log("Sending Cached Results.")
+            });
+            return true; // required for async response
+        }
+
+        sendResponse({ confirmations: results });
+        return true;
+    }
+
 });
 
 
