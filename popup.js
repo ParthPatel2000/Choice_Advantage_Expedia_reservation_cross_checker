@@ -54,93 +54,169 @@ function sendToBackground(confirmations) {
     });
 }
 
+
 document.addEventListener("DOMContentLoaded", () => {
     const runBotBtn = document.getElementById("runBot");
-    const noShowList = document.getElementById("noShowList");
 
-    // --- 1) Run Bot Button ---
-    runBotBtn.addEventListener("click", async () => {
-        // Open Choice Advantage Initialize page in a new tab
-        chrome.tabs.create({ url: "https://www.choiceadvantage.com/choicehotels/FindReservationInitialize.init" }, (tab) => {
-            console.log("Bot started on tab:", tab.id);
-        });
+    // Click handler
+    runBotBtn.addEventListener("click", () => {
+        // Check current button state to toggle
+        if (runBotBtn.textContent.includes("Run")) {
+            chrome.runtime.sendMessage({ type: "START_BOT" });
+
+            chrome.tabs.create({
+                url: "https://www.choiceadvantage.com/choicehotels/FindReservationInitialize.init"
+            }, (tab) => {
+                console.log("Bot started on tab:", tab.id);
+            });
+        } else {
+            chrome.runtime.sendMessage({ type: "STOP_BOT" });
+        }
     });
 
-    // --- 2) Populate No-show / Cancelled list ---
-    // function updateNoShowList() {
-    //     chrome.runtime.sendMessage({ type: "GET_RESULTS" }, (response) => {
-    //         if (!response || !response.confirmations) return;
+    // Function to update button appearance
+    function updateButton(running) {
+        if (running) {
+            runBotBtn.style.backgroundColor = "red";
+            runBotBtn.textContent = "Stop Bot";
+        } else {
+            runBotBtn.style.backgroundColor = "green";
+            runBotBtn.textContent = "Run Bot(Check Reservations on Choice)";
+        }
+    }
 
-    //         // Get all checked filters
-    //         const checkedFilters = Array.from(document.querySelectorAll(".statusFilter:checked"))
-    //             .map(cb => cb.value);
-    //         const showAll = checkedFilters.includes("All");
-
-    //         const lines = [];
-
-    //         for (const [conf, data] of Object.entries(response.confirmations)) {
-    //             const status = data.choiceStatus || "";
-
-    //             // Check for date mismatch
-    //             const stayChanged = (data.checkin !== data.choice_arrival) || (data.checkout !== data.choice_departure);
-
-    //             if (stayChanged) {
-    //                 // Always show if stay changed
-    //                 lines.push(`${conf} - ${data.name} - ${status} - STAY CHANGES`);
-    //             } else if (showAll || checkedFilters.includes(status)) {
-    //                 // Normal behavior
-    //                 lines.push(`${conf} - ${data.name} - ${status}`);
-    //             }
-    //         }
-
-    //         noShowList.value = lines.join("\n");
-    //     });
-    // }
-
-    function updateNoShowList() {
-        chrome.runtime.sendMessage({ type: "GET_RESULTS" }, (response) => {
-            if (!response || !response.confirmations) return;
-
-            const checkedFilters = Array.from(document.querySelectorAll(".statusFilter:checked"))
-                .map(cb => cb.value);
-            const showAll = checkedFilters.includes("All");
-
-            const container = document.getElementById("noShowList");
-            container.innerHTML = ""; // Clear previous
-
-            for (const [conf, data] of Object.entries(response.confirmations)) {
-                const status = data.choiceStatus || "";
-                const stayChanged = (data.checkin !== data.choice_arrival) || (data.checkout !== data.choice_departure);
-
-                const line = document.createElement("div");
-                line.textContent = `${conf} - ${data.name} - ${status}`;
-
-                // if (stayChanged) {
-                //     line.style.backgroundColor = "#ffcccc"; // light red
-                //     line.style.fontWeight = "bold";
-                //     line.textContent += " - STAY CHANGES";
-                //     line.title = `Original: ${data.checkin} → ${data.checkout}\nChoice: ${data.choice_arrival} → ${data.choice_departure}`;
-                // }
-
-                if (stayChanged) {
-                    line.classList.add("stayChangeLine");
-                    line.dataset.tooltip = `Original: ${data.checkin} → ${data.checkout} \nChoice: ${data.choice_arrival} → ${data.choice_departure}`;
-                    line.textContent += " - STAY CHANGES";
-                }
-
-
-                // Only add normal lines if matching filters
-                if (stayChanged || showAll || checkedFilters.includes(status)) {
-                    container.appendChild(line);
-                }
+    // Poll the background every 500ms
+    function pollBotStatus() {
+        chrome.runtime.sendMessage({ type: "GET_STATUS" }, (res) => {
+            if (res && typeof res.running === "boolean") {
+                updateButton(res.running);
             }
         });
     }
 
-
-
-    // Update list every 2 seconds so popup reflects live progress
-    updateNoShowList();
-    setInterval(updateNoShowList, 2000);
+    // Start polling
+    setInterval(pollBotStatus, 500);
 });
 
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const container = document.getElementById("noShowList");
+    const tooltip = document.getElementById("tooltip");
+
+
+    // -------------------------------------------------
+    // Tooltip positioning system
+    // -------------------------------------------------
+    function attachTooltipListeners() {
+        document.querySelectorAll("#noShowList div").forEach(line => {
+            line.onmouseenter = null;
+            line.onmouseleave = null;
+
+            line.addEventListener("mouseenter", () => {
+                tooltip.textContent = line.dataset.tooltip || "";
+                tooltip.style.display = "block";
+
+                const rect = line.getBoundingClientRect();
+                const tooltipHeight = tooltip.offsetHeight || 150;
+
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const showBelow = spaceBelow > tooltipHeight + 10;
+
+                const top = showBelow
+                    ? rect.bottom + window.scrollY + 5
+                    : rect.top + window.scrollY - tooltipHeight - 5;
+
+                tooltip.style.top = `${top}px`;
+                tooltip.style.left = `${rect.left + window.scrollX}px`;
+            });
+
+            line.addEventListener("mouseleave", () => {
+                tooltip.style.display = "none";
+            });
+        });
+    }
+
+
+    // -------------------------------------------------
+    // Render list from chrome.storage.local (EXPEDIA)
+    // -------------------------------------------------
+    function updateNoShowList() {
+        chrome.storage.local.get("CHOICE_RESULTS", (data) => {
+            const reservations = data.CHOICE_RESULTS
+                ? Object.values(data.CHOICE_RESULTS)
+                : [];
+
+            container.innerHTML = "";
+
+            if (!reservations.length) {
+                container.textContent = "No reservations loaded.";
+                return;
+            }
+
+            const checkedFilters = Array.from(
+                document.querySelectorAll(".statusFilter:checked")
+            ).map(cb => cb.value);
+
+            const showAll = checkedFilters.includes("All");
+
+
+            reservations.forEach((res, index) => {
+                const status = res.choiceStatus || "";
+                const stayChanged =
+                    res.checkin !== res.choice_arrival ||
+                    res.checkout !== res.choice_departure;
+
+                const allowed =
+                    stayChanged ||
+                    showAll ||
+                    checkedFilters.includes(status);
+
+                if (!allowed) return;
+
+                const line = document.createElement("div");
+                line.textContent = `${index + 1} - ${res.name} - ${status}`;
+
+
+                if (stayChanged) {
+                    line.classList.add("stayChangeLine");
+                    line.textContent += " - STAY CHANGED";
+
+                    line.dataset.tooltip =
+                        `Original: ${res.checkin} → ${res.checkout}\n` +
+                        `Choice: ${res.choice_arrival} → ${res.choice_departure}`;
+                } else {
+                    line.dataset.tooltip =
+                        `Name: ${res.name}\nStatus: ${status}\nStay: ${res.checkin} → ${res.checkout}`;
+                }
+
+                container.appendChild(line);
+            });
+
+            attachTooltipListeners();
+        });
+    }
+
+
+    // -------------------------------------------------
+    // Initial load
+    // -------------------------------------------------
+    updateNoShowList();
+
+
+    // -------------------------------------------------
+    // Live update when storage changes
+    // -------------------------------------------------
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === "local" && changes.CHOICE_RESULTS) {
+            updateNoShowList();
+        }
+    });
+
+
+    // Optional: update when filters change
+    document.querySelectorAll(".statusFilter").forEach(cb => {
+        cb.addEventListener("change", updateNoShowList);
+    });
+});

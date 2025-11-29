@@ -8,14 +8,14 @@
 </head>
 
 <body>
-    <h1 class="tooltip">
+    <h1 class="tooltip" style="margin-top: 3px;">
         Expedia CSV → Choice Reservation Status Checker
         <span class="tooltiptext">
             Upload your Expedia CSV, then run the bot to check reservation statuses in Choice Advantage.
         </span>
     </h1>
 
-    <h3 class="tooltip">
+    <h3 class="tooltip" style="margin-top: 3px">
         Upload Expedia Reservations CSV
         <span class="tooltiptext">
             1. Download reservations list from Expedia in csv form (filter:Hotel Collect(optional)).<br>
@@ -27,21 +27,31 @@
     </h3>
 
     <input type="file" id="csvFile" accept=".csv" />
-    <button id="runBot">Run (Check Reservations on Choice) </button>
+    <button id="runBot" style="background-color: green;">Run Bot(Check Reservations on Choice) </button>
 
-    <h4>Filter Reservations by status:</h4>
+    <h4 style="margin-top: 3px;">Filter Reservations by status:</h4>
     <div id="filters">
-        <label class="filterBox"><input type="checkbox" class="statusFilter" value="No Show" checked> No Show</label>
-        <label class="filterBox"><input type="checkbox" class="statusFilter" value="Cancelled" checked>
-            Cancelled</label>
-        <label class="filterBox"><input type="checkbox" class="statusFilter" value="In House" checked> In House</label>
-        <label class="filterBox"><input type="checkbox" class="statusFilter" value="Checked Out" checked> Checked
-            Out</label>
+        <label class="filterBox" title="check to see reservations marked No show in choice Advantage">
+            <input type="checkbox" class="statusFilter" value="No Show" checked>
+            <span>No Show</span>
+        </label>
+        <label class="filterBox" title="check to see reservations marked Cancelled in choice Advantage">
+            <input type="checkbox" class="statusFilter" value="Cancelled" checked>
+            <span>Cancelled</span>
+        </label>
+        <label class="filterBox" title="check to see reservations marked In house in choice Advantage">
+            <input type="checkbox" class="statusFilter" value="In House" checked>
+            <span>In House</span>
+        </label>
+        <label class="filterBox" title="check to see reservations marked Checked out in choice Advantage">
+            <input type="checkbox" class="statusFilter" value="Checked Out">
+            <span>Checked Out</span>
+        </label>
     </div>
     <h4>Choice Advantage Reservation status:</h4>
     <!-- <textarea id="noShowList" readonly></textarea> -->
     <div id="noShowList"></div>
-
+    <div id="tooltip"></div>
 
     <div style="text-align:center; font-size:10px; color:#888; margin-top:10px;">
         by Parth
