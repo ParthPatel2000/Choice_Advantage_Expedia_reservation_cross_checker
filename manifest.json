@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Expedia → Choice Advantage Reservation Validator",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Helps during Reconciliation, check all the Reservation from expedia in choice advantage.",
   "permissions": [
     "storage",
