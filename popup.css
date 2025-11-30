@@ -49,6 +49,7 @@ textarea {
     pointer-events: none;
     transition: opacity 0.3s;
     word-wrap: break-word;
+
 }
 
 .tooltip .tooltiptext::after {

@@ -99,6 +99,39 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+document.addEventListener("DOMContentLoaded", () => {
+    chrome.storage.local.get(["FILTER_STATUSES"], data => {
+        let savedStatuses = data.FILTER_STATUSES;
+
+        // --- FIRST LOAD DEFAULTS ---
+        if (!savedStatuses) {
+            // all checked as default
+            savedStatuses = Array.from(document.querySelectorAll(".statusFilter"))
+                .map(cb => cb.value);
+
+            chrome.storage.local.set({ FILTER_STATUSES: savedStatuses });
+        }
+
+        // apply to UI
+        document.querySelectorAll(".statusFilter").forEach(cb => {
+            cb.checked = savedStatuses.includes(cb.value);
+        });
+
+        updateNoShowList();
+    });
+});
+
+
+document.querySelectorAll(".statusFilter").forEach(cb => {
+    cb.addEventListener("change", () => {
+        const selected = Array.from(document.querySelectorAll(".statusFilter:checked"))
+            .map(x => x.value);
+
+        chrome.storage.local.set({ FILTER_STATUSES: selected });
+        updateNoShowList();
+    });
+});
+
 
 
 document.addEventListener("DOMContentLoaded", () => {
