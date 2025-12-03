@@ -34,7 +34,8 @@ function parseCSV(csv) {
             obj[h] = cols[idx];
         });
 
-        results[obj["Confirmation #"]] = {
+        const key = obj["Confirmation #"] || `N${i}`;
+        results[key] = {
             name: obj["Guest"],
             checkin: obj["Check-in"],
             checkout: obj["Check-out"],

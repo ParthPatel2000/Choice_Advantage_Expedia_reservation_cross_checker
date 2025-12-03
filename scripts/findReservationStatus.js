@@ -1,4 +1,3 @@
-
 // Wait for one of multiple elements to appear
 function waitForElement(selectors, timeout = 10000) {
     return new Promise((resolve, reject) => {
