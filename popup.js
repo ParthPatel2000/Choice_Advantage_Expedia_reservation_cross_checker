@@ -39,7 +39,9 @@ function parseCSV(csv) {
             name: obj["Guest"],
             checkin: obj["Check-in"],
             checkout: obj["Check-out"],
-            confirmation: obj["Confirmation #"]
+            confirmation: obj["Confirmation #"],
+            paymentType: obj['Payment type'],
+            expediaStatus: obj['Status']
         };
     }
 
@@ -225,14 +227,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (stayChanged) {
                     line.classList.add("stayChangeLine");
                     line.textContent += " - STAY CHANGED";
-
-                    line.dataset.tooltip =
-                        `Original: ${res.checkin} → ${res.checkout}\n` +
-                        `Choice: ${res.choice_arrival} → ${res.choice_departure}`;
-                } else {
-                    line.dataset.tooltip =
-                        `Name: ${res.name}\nStatus: ${status}\nStay: ${res.checkin} → ${res.checkout}`;
                 }
+
+                // Adding the tool Tip.
+                line.dataset.tooltip =
+                    `Name: ${res.name}\n` +
+                    `Choice Status: ${status}\n` +
+                    `Expedia Status: ${res.expediaStatus}\n` +
+                    `Original: ${res.checkin} → ${res.checkout}\n` +
+                    `Choice: ${res.choice_arrival} → ${res.choice_departure}\n` +
+                    `Payment: ${res.paymentType}\n`;
+
 
                 container.appendChild(line);
             });
