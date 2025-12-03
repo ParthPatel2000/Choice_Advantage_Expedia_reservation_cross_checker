@@ -22,6 +22,17 @@ function searchByConfirmation(confNumber) {
     }
 
     // Fill the field
+    if(confNumber.length === 0) {
+        console.error("Confirmation number is empty.");
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (!tabs || !tabs.length) return;
+        
+            chrome.tabs.update(tabs[0].id, {
+                url: "https://www.choiceadvantage.com/choicehotels/FindReservationInitialize.init"
+            });
+        });
+        return;
+    }
     input.value = confNumber;
     input.dispatchEvent(new Event("input", { bubbles: true }));
     input.dispatchEvent(new Event("change", { bubbles: true }));
