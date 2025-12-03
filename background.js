@@ -5,6 +5,9 @@ let confirmations = {};
 let confirmationQueue = [];
 let currentIndex = 0;
 let botRunning = false;
+let singleSearch = null;
+let runningSingle = false;
+
 
 function saveState() {
     chrome.storage.local.set({
@@ -68,6 +71,21 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     if (msg.type === "GET_STATUS") {
         sendResponse({ running: botRunning });
+    }
+
+    if (msg.type === "START_SINGLE_SEARCH") {
+        singleSearch = msg.confirmation;
+        runningSingle = true;
+
+        // Redirect to init page
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (!tabs || !tabs.length) return;
+        
+            chrome.tabs.update(tabs[0].id, {
+                url: "https://www.choiceadvantage.com/choicehotels/FindReservationInitialize.init"
+            });
+        });
+        return;
     }
 
     // Reservation status returned
@@ -144,7 +162,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // TAB UPDATED → INJECT SCRIPTS
 // ===============================
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (!botRunning) return;
+    if (!botRunning && !runningSingle) return;
     if (changeInfo.status !== "complete") return;
     if (!tab.url) return;
 
@@ -153,11 +171,29 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         console.log("Injecting confirmationNumberSearch.js");
 
         chrome.scripting.executeScript({
-            target: { tabId },
-            files: ["scripts/confirmatioNumberSearch.js"]
-        }, () => {
-            console.log("confirmatioNumberSearch.js injected");
-            sendNextConfirmation(tabId);
+                target: { tabId },
+                files: ["scripts/confirmatioNumberSearch.js"]
+            }, () => {
+        
+                console.log("Init page script injected");
+        
+                if (runningSingle && singleSearch) {
+                    // ⭐ SEND ONLY THIS ONE Confirmation
+                    chrome.tabs.sendMessage(tabId, {
+                        type: "SEARCH_CONFIRMATION",
+                        confirmation: singleSearch
+                    });
+        
+                    runningSingle = false;
+                    singleSearch = null;
+                    return;
+                }
+        
+                // Otherwise continue auto search
+                if (botRunning) {
+                    sendNextConfirmation(tabId);
+                }
+    
         });
     }
 
