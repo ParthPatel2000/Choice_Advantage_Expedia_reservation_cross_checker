@@ -37,7 +37,8 @@ function parseCSV(csv) {
         results[obj["Confirmation #"]] = {
             name: obj["Guest"],
             checkin: obj["Check-in"],
-            checkout: obj["Check-out"]
+            checkout: obj["Check-out"],
+            confirmation: obj["Confirmation #"]
         };
     }
 
@@ -210,6 +211,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const line = document.createElement("div");
                 line.textContent = `${index + 1} - ${res.name} - ${status}`;
+
+                line.addEventListener("click", () => {
+                    console.log("Clicked:", res.name);
+                    chrome.runtime.sendMessage({
+                        type: "START_SINGLE_SEARCH",
+                        confirmation: res.confirmation
+                    });
+                });
 
 
                 if (stayChanged) {
